@@ -32,7 +32,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($result -> num_rows == 1) {
 
       #Check EmployeeID is active
-      $sql = "SELECT employee_id FROM restaurant WHERE employee_id = '$employee_id' AND status='active'";
+      $sql = "SELECT employee_id FROM employee WHERE employee_id = '$employee_id' AND status='active'";
       $result = $conn->query($sql);
 
       if ($result -> num_rows == 1) {
