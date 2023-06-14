@@ -12,79 +12,56 @@ if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] == TRUE) {
 require_once "./config.php";
 
 # Define variables and initialize with empty values
-$user_login_err = $user_password_err = $login_err = "";
-$user_login = $user_password = "";
+$employee_id_err = "";
+$employee_id = "";
 
 # Processing form data when form is submitted
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  if (empty(trim($_POST["user_login"]))) {
-    $user_login_err = "Please enter your id.";
+  if (empty(trim($_POST["employee_id"]))) {
+    $employee_id_err = "Please enter your id.";
   } else {
-    $user_login = trim($_POST["user_login"]);
-  }
-
-  if (empty(trim($_POST["user_password"]))) {
-    $user_password_err = "Please enter your password.";
-  } else {
-    $user_password = trim($_POST["user_password"]);
+    $employee_id = trim($_POST["employee_id"]);
   }
 
   # Validate credentials 
-  if (empty($user_login_err) && empty($user_password_err)) {
+  if (empty($employee_id_err)) {
     # Prepare a select statement
-    $sql = "SELECT id, username, password FROM users WHERE username = ? OR email = ?";
+    $sql = "SELECT employee_id FROM attendance WHERE employee_id = '$employee_id'";
 
-    if ($stmt = mysqli_prepare($link, $sql)) {
-      # Bind variables to the statement as parameters
-      mysqli_stmt_bind_param($stmt, "ss", $param_user_login, $param_user_login);
+    $result = $conn->query($sql);
+    if ($result -> num_rows == 1) {
 
-      # Set parameters
-      $param_user_login = $user_login;
+      #Check EmployeeID is active
+      $sql = "SELECT employee_id FROM restaurant WHERE employee_id = '$employee_id' AND status='active'";
+      $result = $conn->query($sql);
 
-      # Execute the statement
-      if (mysqli_stmt_execute($stmt)) {
-        # Store result
-        mysqli_stmt_store_result($stmt);
+      if ($result -> num_rows == 1) {
+        # Store data in session variables
+        $_SESSION["employee_id"] = $employee_id;
+        $_SESSION["loggedin"] = TRUE;
+        # Set entry time and date
+        $entry_time = date("H:i:s");
+        $entry_date = date("Y-m-d");
 
-        # Check if user exists, If yes then verify password
-        if (mysqli_stmt_num_rows($stmt) == 1) {
-          # Bind values in result to variables
-          mysqli_stmt_bind_result($stmt, $id, $username, $hashed_password);
-
-          if (mysqli_stmt_fetch($stmt)) {
-            # Check if password is correct
-            if (password_verify($user_password, $hashed_password)) {
-
-              # Store data in session variables
-              $_SESSION["id"] = $id;
-              $_SESSION["username"] = $username;
-              $_SESSION["loggedin"] = TRUE;
-
-              # Redirect user to index page
-              echo "<script>" . "window.location.href='./'" . "</script>";
-              exit;
-            } else {
-              # If password is incorrect show an error message
-              $login_err = "The email or password you entered is incorrect.";
-            }
-          }
-        } else {
-          # If user doesn't exists show an error message
-          $login_err = "Invalid username or password.";
-        }
+        $sql = "UPDATE attendance SET entry_time='$entry_time', entry_date='$entry_date' where employee_id='$employee_id'";
+        if ($conn->query($sql)) {
+          # Redirect user to index page
+          echo "<script>" . "window.location.href='./'" . "</script>";
+          exit;
+        } 
       } else {
-        echo "<script>" . "alert('Oops! Something went wrong. Please try again later.');" . "</script>";
+        $_SESSION["status"] = "You are not active now!";
+         # Redirect user to login page if the employee is not active
         echo "<script>" . "window.location.href='./login.php'" . "</script>";
-        exit;
       }
-
-      # Close statement
-      mysqli_stmt_close($stmt);
+    } else {
+      # If user doesn't exists show an error message
+      $employee_id_err = "Invalid id";
     }
   }
 
-  # Close connection
-  mysqli_close($link);
+  #Close connection
+  $conn->close();
 }
 ?>
 
@@ -107,8 +84,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="row min-vh-100 justify-content-center align-items-center">
       <div class="col-lg-5">
         <?php
-        if (!empty($login_err)) {
-          echo "<div class='alert alert-danger'>" . $login_err . "</div>";
+        if (isset($_SESSION["status"])) {
+          echo "<div class='alert alert-warning'>" . $_SESSION["status"] . "</div>";
         }
         ?>
         <div class="form-wrap border rounded p-4">
@@ -117,23 +94,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
           <!-- form starts here -->
           <form action="<?= htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" novalidate>
             <div class="mb-3">
-              <label for="user_login" class="form-label">Enter your ID</label>
-              <input type="text" class="form-control" name="user_login" id="user_login" value="<?= $user_login; ?>">
-              <small class="text-danger"><?= $user_login_err; ?></small>
-            </div>
-            <div class="mb-2">
-              <label for="password" class="form-label">Password</label>
-              <input type="password" class="form-control" name="user_password" id="password">
-              <small class="text-danger"><?= $user_password_err; ?></small>
-            </div>
-            <div class="mb-3 form-check">
-              <input type="checkbox" class="form-check-input" id="togglePassword">
-              <label for="togglePassword" class="form-check-label">Show Password</label>
+              <label for="employee_id" class="form-label">Enter your ID</label>
+              <input type="text" class="form-control" name="employee_id" id="employee_id" value="<?= $employee_id; ?>">
+              <small class="text-danger"><?= $employee_id_err; ?></small>
             </div>
             <div class="mb-3">
               <input type="submit" class="btn btn-primary form-control" name="submit" value="Log In">
             </div>
-            <p class="mb-0">Don't have an account ? <a href="./register.php">Sign Up</a></p>
           </form>
           <!-- form ends here -->
         </div>

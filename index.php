@@ -25,13 +25,13 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== TRUE) {
 <body>
   <div class="container">
     <div class="alert alert-success my-5">
-      Welcome ! You are now signed in to your account.
+      Welcome ! You are now attended.
     </div>
     <!-- User profile -->
     <div class="row justify-content-center">
       <div class="col-lg-5 text-center">
         <img src="./img/blank-avatar.jpg" class="img-fluid rounded" alt="User avatar" width="180">
-        <h4 class="my-4">Hello, <?= htmlspecialchars($_SESSION["username"]); ?></h4>
+        <h4 class="my-4">Hello, <?= htmlspecialchars($_SESSION["employee_id"]); ?></h4>
         <a href="./logout.php" class="btn btn-primary">Log Out</a>
       </div>
     </div>
